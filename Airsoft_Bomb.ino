@@ -332,7 +332,6 @@ void countdown(){
 
 	// Times
 	long lastTick = millis();
-	long disarmTime = lastTick + (seconds * 1000) + (minutes * 60 * 1000) + (hours * 60 * 60 * 1000);
 
 	byte cursorPosition = 11;
 
@@ -405,7 +404,7 @@ void countdown(){
 		    	lcd.print("_");
 		    	lcd.setCursor(cursorPosition,1);
 		    }
-		    else if(key = '#' && cursorPosition == 15){
+		    else if(key == '#' && cursorPosition == 15){
 		    	boolean correct = true;
 
 		    	for(int i= 0; i < 4; i++){
