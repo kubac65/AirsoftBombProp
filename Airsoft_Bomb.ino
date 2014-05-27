@@ -45,6 +45,7 @@ int defusePinIndex;
 int buzzer = 12;
 
 // Bomb variables
+boolean armed = false;
 byte hours;
 byte minutes;
 byte seconds;
@@ -54,12 +55,6 @@ char code[4];
 byte defuse_pin;
 
 char empty[] = "                ";
-
-// Menu
-byte menuItemLimit = 2;
-byte currentMenuOption = 2;
-
-//long armingTimer
 
 void setup() {
 	Serial.begin(9600);
@@ -91,10 +86,14 @@ void setup() {
 }
 
 void loop() {
-	waitForInitiator();
-	setBomb();
-	waitToArm();
-	countdown();
+	if(!armed){
+		waitForInitiator();
+		setBomb();
+		waitToArm();
+	}
+	else{
+		countdown();
+	}
 }
 
 void clearLcd(){
@@ -274,13 +273,11 @@ void getCode(){
 	    char key = getKey();
 
 	    if(key != NO_KEY){
-	    	if(isdigit(key)){
-	    		if(cursorPosition < 4){
-	    			code[cursorPosition] = key;	
-	    			lcd.print(key);
-		    		cursorPosition++;
-		    		lcd.setCursor(cursorPosition,1);
-	    		}
+	    	if(isdigit(key) && cursorPosition < 4){
+    			code[cursorPosition] = key;	
+    			lcd.print(key);
+	    		cursorPosition++;
+	    		lcd.setCursor(cursorPosition,1);
 	    	}
 		    else if(key == '*' && cursorPosition > 0){
 		    	cursorPosition--;
@@ -301,7 +298,7 @@ void waitToArm(){
 	lcd.setCursor(0,1);
 	lcd.print("Press \'A\' to arm");
 
-	boolean armed = false;
+	armed = false;
 	do{
 	    // Check if initiator is still connected
 		if(!isInitiatorConnected()){
@@ -339,7 +336,8 @@ void countdown(){
 
 	byte cursorPosition = 11;
 
-	boolean armed = true;
+	char enteredCode[4];
+	byte codeCounter = 0;
 
 	do{
 	   	if(!isInitiatorConnected()){
@@ -388,12 +386,48 @@ void countdown(){
 		}
 
 		// Check keypad
-		lcd.setCursor(11,1);
+		lcd.setCursor(cursorPosition,1);
 		lcd.blink();
 
 		char key = getKey();
 
+		if(key != NO_KEY){
+			if(isdigit(key) && cursorPosition < 15){
+				lcd.print(key);
+				enteredCode[codeCounter] = key;
+				cursorPosition++;
+				codeCounter++;
+			}
+			else if(key == '*' && cursorPosition > 11){
+		    	cursorPosition--;
+		    	codeCounter--;
+		    	lcd.setCursor(cursorPosition,1);
+		    	lcd.print("_");
+		    	lcd.setCursor(cursorPosition,1);
+		    }
+		    else if(key = '#' && cursorPosition == 15){
+		    	boolean correct = true;
 
+		    	for(int i= 0; i < 4; i++){
+		    		if(code[i] != enteredCode[i]){
+		    			correct = false;
+		    			break;
+		    		}
+		    	}
+
+		    	if(correct){
+		    		defuse();
+		    		armed = false;
+		    	}
+		    	else{
+		    		cursorPosition = 11;
+		    		codeCounter = 0;
+		    		lcd.setCursor(cursorPosition,1);
+		    		lcd.print("____");
+		    		lcd.setCursor(cursorPosition,1);
+		    	}
+		    }
+		}
 	} while (armed);
 }
 
@@ -418,6 +452,8 @@ void detonate(){
 	clearLcd();
 	lcd.noBlink();
 	lcd.print("DETONATED");
+	lcd.setCursor(0,1);
+	lcd.print("Reset with key");
 
 	// Buzzer ON
 	digitalWrite(buzzer, HIGH);
@@ -440,8 +476,19 @@ void defuse(){
 	lcd.setCursor(0,1);
 	lcd.print("Press \'A\' to arm");
 
-	for(;;){
-	}
+	boolean armAgain = false;
+	do{
+	    // Check if initiator is still connected
+		if(!isInitiatorConnected()){
+			lcd.noBlink();
+			return;
+		}
+
+		char key = getKey();
+	    if(key == 'A'){
+	    	armAgain = true;
+	    }
+	}while(!armAgain);
 }
 
 // Keypad helpers
