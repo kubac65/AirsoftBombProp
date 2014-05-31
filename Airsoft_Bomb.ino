@@ -36,23 +36,22 @@ byte colPins[cols] = {5,4,3,2};
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, rows, cols);
 
 // Bomb Pins
-int armedLEDIndicator = 10;
-int initiator = 11;
+byte armedLEDIndicator = 10;
+byte initiator = 11;
 
-int defusePins[4] = {A0,A1,A2,A3};
-int defusePinIndex;
+byte defusePins[4] = {A0,A1,A2,A3};
 
-int buzzer = 12;
+byte buzzer = 12;
 
 // Bomb variables
+byte defusePinIndex;
+
 boolean armed = false;
 byte hours;
 byte minutes;
 byte seconds;
 
-long time;
 char code[4];
-byte defuse_pin;
 
 char empty[] = "                ";
 
@@ -80,16 +79,12 @@ void setup() {
 	// Print welcome text
 	printHello();
 	delay(2000);
-
-	// Wait for Initiator to be connected
-	
 }
 
 void loop() {
 	if(!armed){
 		waitForInitiator();
 		setBomb();
-		waitToArm();
 	}
 	else{
 		countdown();
@@ -117,12 +112,13 @@ void waitForInitiator(){
 	lcd.home();
 	lcd.print("Connect");
 	lcd.setCursor(0,1);
-	lcd.print("Initiator");
+	lcd.print("Primer");
 
 	// Wait for initiator to be connected
 	do{
 	    delay(1);
 	} while (!isInitiatorConnected());
+	delay(1000);
 }
 
 boolean isInitiatorConnected(){
@@ -137,6 +133,7 @@ boolean isInitiatorConnected(){
 void setBomb(){
 	getTime();
 	getCode();
+	waitToArm();
 }
 
 void getTime(){
@@ -311,7 +308,6 @@ void waitToArm(){
 	    	// Assing defuse pin
 	    	randomSeed(millis());
 	    	defusePinIndex = random(0, 4);
-	    	Serial.println(defusePinIndex);
 
 	    	armed = true;
 	    }
@@ -373,7 +369,7 @@ void countdown(){
 		}
 
 		// Check wires
-		for(int i = 0; i < 4; i++){
+		for(byte i = 0; i < 4; i++){
 			if(i == defusePinIndex && digitalRead(defusePins[i]) == HIGH){
 				defuse();
 				armed = false;
@@ -497,13 +493,5 @@ char getKey(){
 		lcdState = !lcdState;
 		lcd.setBacklight(lcdState);
 	}
-	return key;
-}
-
-char getKeyBlocking(){
-	char key;
-	do{
-	    key = getKey();
-	} while (key == NO_KEY);
 	return key;
 }
